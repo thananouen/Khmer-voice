@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>សំឡេងខ្មែរ AI — Text to Speech, Speech to Text, Voice Clone</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#fafaf9;--card:#fff;--tx:#18181b;--mu:#71717a;--bd:#e4e4e7;--ac:#6d4aff;--ac2:#fff;--ok:#16a34a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f0f10;--card:#1a1a1c;--tx:#f4f4f5;--mu:#a1a1aa;--bd:#2e2e32;--ac:#8b73ff;--ac2:#0f0f10}}
+:root[data-theme="dark"]{--bg:#0f0f10;--card:#1a1a1c;--tx:#f4f4f5;--mu:#a1a1aa;--bd:#2e2e32;--ac:#8b73ff;--ac2:#0f0f10}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Noto Sans Khmer",system-ui,sans-serif;line-height:1.7}
+.w{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.7rem;line-height:1.4;margin:.6em 0 .2em}
+.sub{color:var(--mu);margin:0 0 20px}
+.tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:5px;margin-bottom:14px}
+.tabs button{flex:1;border:0;background:none;color:var(--mu);font:inherit;font-weight:600;padding:9px 4px;border-radius:10px;cursor:pointer;font-size:.9rem}
+.tabs button.on{background:var(--ac);color:var(--ac2)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px}
+.p{display:none}.p.on{display:block}
+textarea,select{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+textarea{min-height:140px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.row>*{flex:1 1 140px}
+.btn{border:0;background:var(--ac);color:var(--ac2);font:inherit;font-weight:600;padding:11px 16px;border-radius:12px;cursor:pointer}
+.btn.g{background:none;color:var(--tx);border:1px solid var(--bd)}
+.btn.rec{background:#dc2626;color:#fff}
+.m{color:var(--mu);font-size:.85rem;margin:8px 0 0}
+.seg{border-top:1px solid var(--bd);padding:8px 0;display:flex;gap:10px}
+.seg b{color:var(--ac);font-variant-numeric:tabular-nums;white-space:nowrap}
+#tr{min-height:120px;margin-top:12px}
+.note{background:var(--bg);border:1px dashed var(--bd);border-radius:12px;padding:10px 12px;color:var(--mu);font-size:.88rem;margin-top:12px}
+.vc{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--bd);border-radius:12px;padding:8px 12px;margin-top:8px}
+audio{width:100%;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="w">
+<h1>សំឡេង AI ភាសាខ្មែរ</h1>
+<p class="sub">បំប្លែងអត្ថបទជាសំឡេង · បំប្លែងសំឡេងជាអត្ថបទ · ចម្លងសំឡេង</p>
+
+<div class="tabs" id="tabs">
+<button class="on" data-t="tts">អត្ថបទ → សំឡេង</button>
+<button data-t="stt">សំឡេង → អត្ថបទ</button>
+<button data-t="vc">ចម្លងសំឡេង</button>
+</div>
+
+<section class="p on card" id="tts">
+<textarea id="txt" maxlength="500">សូមស្វាគមន៍មកកាន់កម្មវិធីសំឡេង AI។ សូមរីករាយជាមួយសំឡេងដែលស្តាប់ទៅដូចធម្មជាតិ។</textarea>
+<p class="m"><span id="cnt">0</span>/500</p>
+<div class="row"><select id="eng"><option value="kiri">Kiri TTS API (សំឡេងខ្មែរល្អ)</option><option value="dev">សំឡេងឧបករណ៍</option></select><input id="key" type="password" placeholder="Kiri API Key" style="font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px 12px"></div>
+<div class="row"><select id="voice"></select><select id="rate"><option value=".8">យឺត</option><option value="1" selected>ធម្មតា</option><option value="1.2">លឿន</option></select></div>
+<div class="row"><button class="btn" id="play">▶ បង្កើតសំឡេង</button><button class="btn g" id="stop">■ ឈប់</button></div>
+<audio id="out" controls hidden></audio><p class="m" id="ttsMsg"></p>
+</section>
+
+<section class="p card" id="stt">
+<div class="row" style="margin-top:0"><select id="lang"><option value="km-KH">ខ្មែរ</option><option value="en-US">English</option></select><button class="btn" id="mic">🎙 ចាប់ផ្តើមថត</button></div>
+<div id="tr"></div>
+<div class="row"><button class="btn g" id="cp">ចម្លង</button><button class="btn g" id="txtDl">TXT</button><button class="btn g" id="srtDl">SRT</button><button class="btn g" id="clr">សម្អាត</button></div>
+<p class="m" id="sttMsg"></p>
+</section>
+
+<section class="p card" id="vc">
+<p style="margin-top:0">ថតសំឡេងរបស់អ្នកយ៉ាងតិច ១០ វិនាទី ដើម្បីបង្កើតគំរូសំឡេង។</p>
+<div class="row" style="margin-top:0"><button class="btn" id="vrec">● ថតគំរូសំឡេង</button><span class="m" id="vt" style="margin:0">00:00</span></div>
+<audio id="vaud" controls hidden></audio>
+<div class="row"><input id="vname" placeholder="ឈ្មោះសំឡេង" style="font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:10px 12px"><button class="btn" id="vsave">រក្សាទុកគំរូ</button></div>
+<div id="vlist"></div>
+<div class="note">ℹ️ ទំព័រនេះថត និងរក្សាទុកគំរូសំឡេងនៅក្នុងឧបករណ៍អ្នកតែប៉ុណ្ណោះ។ ដើម្បីចម្លងសំឡេងពិតៗ សូមប្រើ kiritts.com/dashboard/voice-cloning ជាមួយគំរូដែលអ្នកថតនេះ។ ការបង្កើតសំឡេងចម្លងពិតប្រាកដ (voice cloning) ត្រូវការម៉ូឌែល AI នៅលើម៉ាស៊ីនមេ (server) ដែលត្រូវតភ្ជាប់ជាមួយ API ដូចជា Kiri TTS។</div>
+</section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('#tabs button,.p').forEach(e=>e.classList.remove('on'));
+  b.classList.add('on');$(b.dataset.t).classList.add('on');
+});
+const fmt=s=>{s=Math.floor(s);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+
+/* ---------- TTS ---------- */
+const synth=window.speechSynthesis;
+const KIRI=['Maly','Neary','Oudom','Phanin','Rithy','Sota','Sophon','Soklin','Seth','Mey','Chanda','Nita'];
+try{$('key').value=localStorage.getItem('kk')||''}catch(_){}
+function loadVoices(){
+  if($('eng').value==='kiri'){$('voice').innerHTML=KIRI.map(v=>`<option>${v}</option>`).join('');$('ttsMsg').textContent='';return}
+  if(!synth){$('ttsMsg').textContent='កម្មវិធីរុករកនេះមិនគាំទ្រ Text to Speech។';return}
+  const vs=synth.getVoices(),km=vs.filter(v=>/^km/i.test(v.lang)),list=km.length?km:vs;
+  $('voice').innerHTML=list.map(v=>`<option value="${v.name}">${v.name} (${v.lang})</option>`).join('');
+  $('ttsMsg').textContent=km.length?'':'⚠️ ឧបករណ៍នេះគ្មានសំឡេងខ្មែរ។ សូមប្រើ Kiri TTS API។';
+}
+$('eng').onchange=loadVoices;loadVoices();if(synth)synth.onvoiceschanged=loadVoices;
+$('txt').oninput=()=>$('cnt').textContent=$('txt').value.length;$('txt').oninput();
+$('play').onclick=async()=>{
+  const text=$('txt').value.trim();if(!text)return;
+  if($('eng').value==='kiri'){
+    const k=$('key').value.trim();
+    if(!k){$('ttsMsg').textContent='សូមបញ្ចូល Kiri API Key (យកពី kiritts.com/dashboard)';return}
+    try{localStorage.setItem('kk',k)}catch(_){}
+    $('play').disabled=true;$('ttsMsg').textContent='កំពុងបង្កើត…';
+    try{
+      const r=await fetch('https://api.kiritts.com/v1/audio/speech',{method:'POST',
+        headers:{'Authorization':'Bearer '+k,'Content-Type':'application/json'},
+        body:JSON.stringify({model:'kiritts',voice:$('voice').value,input:text})});
+      if(!r.ok)throw new Error(r.status+' '+(await r.text()).slice(0,120));
+      const ct=r.headers.get('content-type')||'';
+      let url;
+      if(ct.includes('json')){const j=await r.json();const d=j.audio||j.audio_base64||j.data||j.url;url=/^https?:|^data:/.test(d)?d:'data:audio/mpeg;base64,'+d}
+      else url=URL.createObjectURL(await r.blob());
+      $('out').src=url;$('out').hidden=false;$('out').play();$('ttsMsg').textContent='';
+    }catch(e){$('ttsMsg').textContent='កំហុស៖ '+e.message+' (ប្រសិនបើជា "Failed to fetch" អាចជាបញ្ហា CORS ឬ API Key ខុស)'}
+    $('play').disabled=false;return;
+  }
+  if(!synth)return;synth.cancel();
+  const u=new SpeechSynthesisUtterance(text),v=synth.getVoices().find(x=>x.name===$('voice').value);
+  if(v){u.voice=v;u.lang=v.lang}else u.lang='km-KH';
+  u.rate=+$('rate').value;synth.speak(u);
+};
+$('stop').onclick=()=>{synth&&synth.cancel();$('out').pause()};
+
+/* ---------- STT ---------- */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null,segs=[],t0=0,live=false;
+function draw(interim=''){
+  $('tr').innerHTML=segs.map(s=>`<div class="seg"><b>${fmt(s.t)}</b><span>${s.x}</span></div>`).join('')+(interim?`<div class="seg" style="opacity:.55"><b>…</b><span>${interim}</span></div>`:'');
+}
+$('mic').onclick=()=>{
+  if(!SR){$('sttMsg').textContent='កម្មវិធីរុករកនេះមិនគាំទ្រ Speech to Text។ សូមប្រើ Chrome ឬ Edge។';return}
+  if(live){live=false;rec.stop();return}
+  rec=new SR();rec.lang=$('lang').value;rec.continuous=true;rec.interimResults=true;
+  t0=Date.now();
+  rec.onresult=e=>{let im='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const r=e.results[i];
+      if(r.isFinal)segs.push({t:(Date.now()-t0)/1000,x:r[0].transcript.trim()});else im+=r[0].transcript;
+    }draw(im)};
+  rec.onerror=e=>$('sttMsg').textContent='កំហុស៖ '+e.error+(e.error==='language-not-supported'?' (ភាសានេះមិនត្រូវបានគាំទ្រ)':'');
+  rec.onend=()=>{if(live)try{rec.start()}catch(_){}else{$('mic').textContent='🎙 ចាប់ផ្តើមថត';$('mic').classList.remove('rec')}};
+  live=true;rec.start();$('mic').textContent='■ បញ្ឈប់';$('mic').classList.add('rec');$('sttMsg').textContent='';
+};
+const all=()=>segs.map(s=>s.x).join('\n');
+function dl(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=name;a.click()}
+$('txtDl').onclick=()=>dl('transcript.txt',all());
+$('srtDl').onclick=()=>{
+  const ts=s=>{const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=(s%60).toFixed(3).replace('.',',');return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+x.padStart(6,'0')};
+  dl('transcript.srt',segs.map((s,i)=>`${i+1}\n${ts(Math.max(0,s.t-3))} --> ${ts(s.t)}\n${s.x}\n`).join('\n'));
+};
+$('cp').onclick=()=>navigator.clipboard&&navigator.clipboard.writeText(all()).catch(()=>{});
+$('clr').onclick=()=>{segs=[];draw()};
+
+/* ---------- Voice clone (sample recording) ---------- */
+let mr=null,chunks=[],tick=null,sec=0,blobUrl=null,samples=[];
+try{samples=JSON.parse(localStorage.getItem('vs')||'[]')}catch(_){}
+function renderV(){$('vlist').innerHTML=samples.map((s,i)=>`<div class="vc"><span>🎤 ${s.n}</span><button class="btn g" data-i="${i}">លុប</button></div>`).join('');
+  $('vlist').querySelectorAll('button').forEach(b=>b.onclick=()=>{samples.splice(+b.dataset.i,1);save();renderV()})}
+function save(){try{localStorage.setItem('vs',JSON.stringify(samples))}catch(_){}}
+renderV();
+$('vrec').onclick=async()=>{
+  if(mr&&mr.state==='recording'){mr.stop();return}
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({audio:true});
+    mr=new MediaRecorder(st);chunks=[];sec=0;
+    mr.ondataavailable=e=>chunks.push(e.data);
+    mr.onstop=()=>{clearInterval(tick);st.getTracks().forEach(t=>t.stop());
+      blobUrl=URL.createObjectURL(new Blob(chunks,{type:mr.mimeType}));
+      $('vaud').src=blobUrl;$('vaud').hidden=false;
+      $('vrec').textContent='● ថតម្តងទៀត';$('vrec').classList.remove('rec');
+      if(sec<10)$('vt').textContent=fmt(sec)+' — ខ្លីពេក សូមថតយ៉ាងតិច ១០ វិនាទី'};
+    mr.start();$('vrec').textContent='■ បញ្ឈប់';$('vrec').classList.add('rec');
+    tick=setInterval(()=>{sec++;$('vt').textContent=fmt(sec)},1000);
+  }catch(e){$('vt').textContent='មិនអាចប្រើមីក្រូហ្វូនបានទេ'}
+};
+$('vsave').onclick=()=>{
+  if(!blobUrl||sec<10){$('vt').textContent='សូមថតយ៉ាងតិច ១០ វិនាទីសិន';return}
+  samples.push({n:$('vname').value.trim()||'សំឡេងរបស់ខ្ញុំ'});save();renderV();$('vname').value='';
+};
+</script>
+</body>
+</html>
